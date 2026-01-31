@@ -30,6 +30,8 @@ namespace FeatureFlagEngine.Api.Helpers.Bootstraps
             // Register application services
             services.AddScoped<IFeatureFlagService, FeatureFlagService>();
             services.AddScoped<IRedisCacheService, RedisCacheService>();
+
+            services.AddAppHealthChecks(configuration);
         }
 
         public static void UseMigration(this WebApplication builder)

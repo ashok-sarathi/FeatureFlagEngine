@@ -23,6 +23,8 @@ namespace FeatureFlagEngine.Api
 
             var app = builder.Build();
 
+            app.UseAppHealthChecks();
+
             app.UseMiddleware<ExceptionHandlingMiddleware>();
 
             app.UseMigration();

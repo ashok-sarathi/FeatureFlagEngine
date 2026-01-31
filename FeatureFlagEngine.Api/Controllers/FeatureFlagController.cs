@@ -84,10 +84,7 @@ namespace FeatureFlagEngine.Api.Controllers
 
         // GET: api/featureflags/{key}/evaluate?userId=123&groupId=admin
         [HttpGet("{key}/evaluate")]
-        public async Task<ActionResult<bool>> Evaluate(
-            string key,
-            [FromQuery] string? userId,
-            [FromQuery] string? groupId)
+        public async Task<ActionResult<bool>> Evaluate(string key, [FromQuery] string? userId, [FromQuery] string? groupId)
         {
             var (result, fromCache) = await _service.EvaluateAsync(key, userId, groupId);
 

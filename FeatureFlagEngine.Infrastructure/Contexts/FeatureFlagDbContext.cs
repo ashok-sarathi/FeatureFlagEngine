@@ -16,6 +16,7 @@ namespace FeatureFlagEngine.Infrastructure.Contexts
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(FeatureFlagDbContext).Assembly);
+            base.OnModelCreating(modelBuilder);
         }
     }
 }
