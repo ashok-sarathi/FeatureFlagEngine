@@ -1,6 +1,65 @@
-@FeatureFlagEngine.Api_HostAddress = http://localhost:5127
+@Api_HostAddress = http://localhost:5000
 
-GET {{FeatureFlagEngine.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+@includeOverrides=true
+# @name GetAllFeatureFlags
+GET {{Api_HostAddress}}/api/FeatureFlag?includeOverrides={{includeOverrides}}
+
+###
+
+# @name CreateFeatureFlag
+POST {{Api_HostAddress}}/api/FeatureFlag
+accept: text/plain
+Content-Type: application/json
+
+{
+  "key": "test",
+  "isEnabled": true,
+  "description": "test is a feature flag"
+}
+
+###
+
+# @name GetFeatureFlag
+GET {{Api_HostAddress}}/api/FeatureFlag/{{CreateFeatureFlag.response.body.id}}
+
+###
+
+@operaationKey=test
+# @name UpdateFeatureFlagGlobal
+PATCH {{Api_HostAddress}}/api/FeatureFlag/{{operaationKey}}/global?isEnabled=true
+
+###
+
+# overrideTypes = 1(User), 2(Group)
+@overrideTypeValue=1
+@targetIdValue=user-123
+@targetValue=false
+
+# @name FeatureFlagOverride
+POST {{Api_HostAddress}}/api/FeatureFlag/{{operaationKey}}/overrides
+accept: */*
+Content-Type: application/json
+
+{
+  "overrideType": {{overrideTypeValue}},
+  "targetId": "{{targetIdValue}}",
+  "isEnabled": {{targetValue}}
+}
+
+###
+
+@deleteOverrideTypeValue=1
+@deleteTargetIdValue=string
+DELETE {{Api_HostAddress}}/api/FeatureFlag/{{operaationKey}}/overrides?type={{deleteOverrideTypeValue}}&targetId={{deleteTargetIdValue}}
+accept: */*
+
+###
+
+@requestKey=test
+@userId=
+@groupId=
+
+# @name EvaluateFeatureFlag
+GET {{Api_HostAddress}}/api/FeatureFlag/{{requestKey}}/evaluate?userId={{userId}}&groupId={{groupId}}
 
 ###

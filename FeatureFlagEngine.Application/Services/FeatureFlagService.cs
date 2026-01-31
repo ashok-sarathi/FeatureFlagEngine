@@ -12,11 +12,27 @@ using System.Text;
 
 namespace FeatureFlagEngine.Application.Interfaces.Services
 {
-    public class FeatureFlagService(IFeatureFlagRepository featureRepo, IFeatureOverrideRepository featureOverrideRepo, IRedisCacheService cache)
+    /// <summary>
+    /// Application service responsible for managing feature flags and executing
+    /// runtime evaluation logic including overrides and caching.
+    /// </summary>
+    /// <remarks>
+    /// Evaluation priority:
+    /// 1. User override
+    /// 2. Group override
+    /// 3. Global feature state (default)
+    /// </remarks>
+    public class FeatureFlagService(
+        IFeatureFlagRepository featureRepo,
+        IFeatureOverrideRepository featureOverrideRepo,
+        IRedisCacheService cache)
         : CommonService<FeatureFlag, FeatureFlagDto>(featureRepo), IFeatureFlagService
     {
         private const string CachePrefix = "feature_eval:";
 
+        /// <summary>
+        /// Retrieves all feature flags with optional inclusion of override data.
+        /// </summary>
         public async Task<List<FeatureFlagDto>> GetAllAsync(bool includeOverrides)
         {
             return includeOverrides
@@ -26,6 +42,10 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
                 : await base.GetAllAsync();
         }
 
+        /// <summary>
+        /// Creates a new feature flag if the key does not already exist.
+        /// </summary>
+        /// <exception cref="BadRequestException">Thrown if a feature with the same key already exists.</exception>
         public override async Task<FeatureFlagDto> CreateAsync(FeatureFlagDto dto)
         {
             var existing = await featureRepo.GetByKeyWithOverridesAsync(dto.Key);
@@ -36,11 +56,20 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
             return await base.CreateAsync(dto);
         }
 
-
+        /// <summary>
+        /// Evaluates whether a feature is enabled for a given user and/or group context.
+        /// Results are cached to reduce repeated database lookups.
+        /// </summary>
+        /// <returns>
+        /// Tuple:
+        /// Item1 → evaluation result,
+        /// Item2 → indicates whether the result was returned from cache.
+        /// </returns>
         public async Task<(bool, bool)> EvaluateAsync(string key, string? userId = null, string? groupId = null)
         {
             var cacheKey = BuildCacheKey(key, userId, groupId);
 
+            // Attempt to serve evaluation result from cache first
             var cached = await cache.GetAsync<bool?>(cacheKey);
             if (cached.HasValue)
                 return (cached.Value, true);
@@ -51,7 +80,7 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
             var overrides = feature.Overrides;
             bool result;
 
-            // 1️. User override (highest priority)
+            // 1. User-specific override (highest priority)
             if (!string.IsNullOrWhiteSpace(userId))
             {
                 var userOverride = overrides.FirstOrDefault(o =>
@@ -66,7 +95,7 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
                 }
             }
 
-            // 2️. Group override
+            // 2. Group-specific override
             if (!string.IsNullOrWhiteSpace(groupId))
             {
                 var groupOverride = overrides.FirstOrDefault(o =>
@@ -81,13 +110,17 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
                 }
             }
 
-            // 3️. Global default
+            // 3. Global feature state (fallback)
             result = feature.IsEnabled;
 
             await cache.SetAsync(cacheKey, result, TimeSpan.FromMinutes(5));
             return (result, false);
         }
 
+        /// <summary>
+        /// Adds or updates an override rule for a feature flag.
+        /// Existing overrides for the same target are updated instead of duplicated.
+        /// </summary>
         public async Task AddOverrideAsync(string key, FeatureOverrideDto dto)
         {
             var feature = await featureRepo.GetByKeyWithOverridesAsync(key)
@@ -99,11 +132,13 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
 
             if (existing != null)
             {
+                // Update existing override
                 existing.IsEnabled = dto.IsEnabled;
                 await featureOverrideRepo.UpdateAsync(existing);
             }
             else
             {
+                // Create new override
                 await featureOverrideRepo.AddAsync(new FeatureOverride
                 {
                     Id = Guid.NewGuid(),
@@ -113,9 +148,17 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
                     IsEnabled = dto.IsEnabled
                 });
             }
-            await InvalidateFeatureCache(BuildCacheKey(key, dto.OverrideType == FeatureOverrideType.User ? dto.TargetId : null, dto.OverrideType == FeatureOverrideType.Group ? dto.TargetId : null));
+
+            // Invalidate cached evaluations for this feature/target combination
+            await InvalidateFeatureCache(BuildCacheKey(
+                key,
+                dto.OverrideType == FeatureOverrideType.User ? dto.TargetId : null,
+                dto.OverrideType == FeatureOverrideType.Group ? dto.TargetId : null));
         }
 
+        /// <summary>
+        /// Removes an override rule from a feature flag.
+        /// </summary>
         public async Task RemoveOverrideAsync(string key, FeatureOverrideType type, string targetId)
         {
             var feature = await featureRepo.GetByKeyWithOverridesAsync(key)
@@ -130,10 +173,17 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
 
             feature.Overrides.Remove(existing);
             await featureRepo.UpdateAsync(feature);
-            await InvalidateFeatureCache(BuildCacheKey(key, type == FeatureOverrideType.User ? targetId : null, type == FeatureOverrideType.Group ? targetId : null));
+
+            // Clear related cached evaluations
+            await InvalidateFeatureCache(BuildCacheKey(
+                key,
+                type == FeatureOverrideType.User ? targetId : null,
+                type == FeatureOverrideType.Group ? targetId : null));
         }
 
-
+        /// <summary>
+        /// Updates the global default state of a feature flag.
+        /// </summary>
         public async Task UpdateGlobalStateAsync(string key, bool isEnabled)
         {
             var feature = await featureRepo.GetByKeyWithOverridesAsync(key)
@@ -141,10 +191,14 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
 
             feature.IsEnabled = isEnabled;
             await featureRepo.UpdateAsync(feature);
+
+            // Invalidate base cache entry for the feature
             await InvalidateFeatureCache(key);
         }
 
-
+        /// <summary>
+        /// Maps a domain FeatureFlag entity to its DTO representation.
+        /// </summary>
         protected override FeatureFlagDto MapToDto(FeatureFlag entity)
         {
             return new FeatureFlagDto
@@ -164,6 +218,9 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
             };
         }
 
+        /// <summary>
+        /// Maps a FeatureFlag DTO back to its domain entity.
+        /// </summary>
         protected override FeatureFlag MapToEntity(FeatureFlagDto dto)
         {
             return new FeatureFlag
@@ -182,23 +239,24 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
             };
         }
 
+        /// <summary>
+        /// Builds a cache key uniquely identifying an evaluation context.
+        /// </summary>
         private static string BuildCacheKey(string key, string? userId, string? groupId)
         {
             var result = $"{CachePrefix}{key}";
             if (!string.IsNullOrWhiteSpace(groupId))
-            {
                 result += $":group:{groupId}";
-            }
-            if(!string.IsNullOrWhiteSpace(userId))
-            {
+            if (!string.IsNullOrWhiteSpace(userId))
                 result += $":user:{userId}";
-            }
             return result;
         }
 
+        /// <summary>
+        /// Removes cached evaluation entries for a feature.
+        /// </summary>
         private async Task InvalidateFeatureCache(string key)
         {
-            // Simple approach: remove all evaluations for this feature
             await cache.RemoveAsync($"{CachePrefix}{key}");
         }
     }
