@@ -26,14 +26,14 @@ GET {{Api_HostAddress}}/api/FeatureFlag/{{CreateFeatureFlag.response.body.id}}
 
 @operaationKey=test
 # @name UpdateFeatureFlagGlobal
-PATCH {{Api_HostAddress}}/api/FeatureFlag/{{operaationKey}}/global?isEnabled=true
+PATCH {{Api_HostAddress}}/api/FeatureFlag/{{operaationKey}}/global?isEnabled=false
 
 ###
 
 # overrideTypes = 1(User), 2(Group)
-@overrideTypeValue=1
-@targetIdValue=user-123
-@targetValue=false
+@overrideTypeValue=3
+@targetIdValue=IN
+@targetValue=true
 
 # @name FeatureFlagOverride
 POST {{Api_HostAddress}}/api/FeatureFlag/{{operaationKey}}/overrides
@@ -58,8 +58,9 @@ accept: */*
 @requestKey=test
 @userId=
 @groupId=
+@region=IN
 
 # @name EvaluateFeatureFlag
-GET {{Api_HostAddress}}/api/FeatureFlag/{{requestKey}}/evaluate?userId={{userId}}&groupId={{groupId}}
+GET {{Api_HostAddress}}/api/FeatureFlag/{{requestKey}}/evaluate?userId={{userId}}&groupId={{groupId}}&region={{region}}
 
 ###
