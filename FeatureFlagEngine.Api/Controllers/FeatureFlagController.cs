@@ -163,15 +163,16 @@ namespace FeatureFlagEngine.Api.Controllers
         /// <param name="key">Feature flag key.</param>
         /// <param name="userId">Optional user identifier.</param>
         /// <param name="groupId">Optional group identifier.</param>
+        /// <param name="region">Optional region identifier.</param>
         /// <returns>Boolean result indicating if the feature is enabled.</returns>
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpGet("{key}/evaluate")]
-        public async Task<ActionResult<bool>> Evaluate(string key, [FromQuery] string? userId, [FromQuery] string? groupId)
+        public async Task<ActionResult<bool>> Evaluate(string key, [FromQuery] string? userId, [FromQuery] string? groupId, [FromQuery] string? region)
         {
-            var (result, fromCache) = await _service.EvaluateAsync(key, userId, groupId);
+            var (result, fromCache) = await _service.EvaluateAsync(key, userId, groupId, region);
 
             // Adds a response header to indicate whether evaluation was served from cache
             Response.Headers.Append("X-Cache", fromCache ? "HIT" : "MISS");

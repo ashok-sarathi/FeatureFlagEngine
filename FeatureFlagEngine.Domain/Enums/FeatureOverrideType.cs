@@ -7,6 +7,7 @@ namespace FeatureFlagEngine.Domain.Enums
     public enum FeatureOverrideType
     {
         User = 1,
-        Group = 2
+        Group = 2,
+        Region = 3
     }
 }

@@ -202,9 +202,9 @@ namespace FeatureFlagEngine.Api.Tests.Controllers
         [Fact]
         public async Task Evaluate_WhenCacheHit_ShouldReturnOkAndSetHeader()
         {
-            _serviceMock.Setup(s => s.EvaluateAsync("f1", "u1", "g1")).ReturnsAsync((true, true));
+            _serviceMock.Setup(s => s.EvaluateAsync("f1", "u1", "g1", "r1")).ReturnsAsync((true, true));
 
-            var result = await _controller.Evaluate("f1", "u1", "g1");
+            var result = await _controller.Evaluate("f1", "u1", "g1", "r1");
 
             var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
             ok.Value.Should().Be(true);
@@ -214,9 +214,9 @@ namespace FeatureFlagEngine.Api.Tests.Controllers
         [Fact]
         public async Task Evaluate_WhenCacheMiss_ShouldReturnOkAndSetHeader()
         {
-            _serviceMock.Setup(s => s.EvaluateAsync("f1", null, null)).ReturnsAsync((false, false));
+            _serviceMock.Setup(s => s.EvaluateAsync("f1", null, null, null)).ReturnsAsync((false, false));
 
-            var result = await _controller.Evaluate("f1", null, null);
+            var result = await _controller.Evaluate("f1", null, null, null);
 
             var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
             ok.Value.Should().Be(false);
@@ -226,9 +226,9 @@ namespace FeatureFlagEngine.Api.Tests.Controllers
         [Fact]
         public async Task Evaluate_ShouldSetOnlyOneCacheHeader()
         {
-            _serviceMock.Setup(s => s.EvaluateAsync("f1", null, null)).ReturnsAsync((true, true));
+            _serviceMock.Setup(s => s.EvaluateAsync("f1", null, null, null)).ReturnsAsync((true, true));
 
-            await _controller.Evaluate("f1", null, null);
+            await _controller.Evaluate("f1", null, null, null);
 
             _controller.Response.Headers["X-Cache"].Count.Should().Be(1);
         }

@@ -57,7 +57,7 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
         }
 
         /// <summary>
-        /// Evaluates whether a feature is enabled for a given user and/or group context.
+        /// Evaluates whether a feature is enabled for a given user and/or group and/or region context.
         /// Results are cached to reduce repeated database lookups.
         /// </summary>
         /// <returns>
@@ -65,9 +65,9 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
         /// Item1 → evaluation result,
         /// Item2 → indicates whether the result was returned from cache.
         /// </returns>
-        public async Task<(bool, bool)> EvaluateAsync(string key, string? userId = null, string? groupId = null)
+        public async Task<(bool, bool)> EvaluateAsync(string key, string? userId = null, string? groupId = null, string? region = null)
         {
-            var cacheKey = BuildCacheKey(key, userId, groupId);
+            var cacheKey = BuildCacheKey(key, userId, groupId, region);
 
             // Attempt to serve evaluation result from cache first
             var cached = await cache.GetAsync<bool?>(cacheKey);
@@ -110,7 +110,22 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
                 }
             }
 
-            // 3. Global feature state (fallback)
+            // 3. Region-specific override
+            if (!string.IsNullOrWhiteSpace(region))
+            {
+                var regionOverride = overrides.FirstOrDefault(o =>
+                    o.OverrideType == FeatureOverrideType.Region &&
+                    o.TargetId == region);
+
+                if (regionOverride != null)
+                {
+                    result = regionOverride.IsEnabled;
+                    await cache.SetAsync(cacheKey, result, TimeSpan.FromMinutes(5));
+                    return (result, false);
+                }
+            }
+
+            // 4. Global feature state (fallback)
             result = feature.IsEnabled;
 
             await cache.SetAsync(cacheKey, result, TimeSpan.FromMinutes(5));
@@ -153,7 +168,8 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
             await InvalidateFeatureCache(BuildCacheKey(
                 key,
                 dto.OverrideType == FeatureOverrideType.User ? dto.TargetId : null,
-                dto.OverrideType == FeatureOverrideType.Group ? dto.TargetId : null));
+                dto.OverrideType == FeatureOverrideType.Group ? dto.TargetId : null,
+                dto.OverrideType == FeatureOverrideType.Region ? dto.TargetId : null));
         }
 
         /// <summary>
@@ -178,7 +194,8 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
             await InvalidateFeatureCache(BuildCacheKey(
                 key,
                 type == FeatureOverrideType.User ? targetId : null,
-                type == FeatureOverrideType.Group ? targetId : null));
+                type == FeatureOverrideType.Group ? targetId : null,
+                type == FeatureOverrideType.Region ? targetId : null));
         }
 
         /// <summary>
@@ -242,9 +259,11 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
         /// <summary>
         /// Builds a cache key uniquely identifying an evaluation context.
         /// </summary>
-        private static string BuildCacheKey(string key, string? userId, string? groupId)
+        private static string BuildCacheKey(string key, string? userId, string? groupId, string? region)
         {
             var result = $"{CachePrefix}{key}";
+            if (!string.IsNullOrWhiteSpace(region))
+                result += $":region:{region}";
             if (!string.IsNullOrWhiteSpace(groupId))
                 result += $":group:{groupId}";
             if (!string.IsNullOrWhiteSpace(userId))

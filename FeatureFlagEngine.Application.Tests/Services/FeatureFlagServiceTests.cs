@@ -229,5 +229,337 @@ namespace FeatureFlagEngine.Application.Tests.Services
             feature.IsEnabled.Should().BeTrue();
             _featureRepo.Verify(r => r.UpdateAsync(feature), Times.Once);
         }
+
+        [Fact]
+        public async Task EvaluateAsync_ShouldReturnRegionOverride_WhenRegionMatch()
+        {
+            // Arrange
+            var feature = new FeatureFlag
+            {
+                Id = Guid.NewGuid(),
+                Key = "NewDashboard",
+                IsEnabled = false,
+                Overrides =
+                [
+                    new FeatureOverride
+            {
+                OverrideType = FeatureOverrideType.Region,
+                TargetId = "IN",
+                IsEnabled = true
+            }
+                ]
+            };
+
+            _featureRepo.Setup(r => r.GetByKeyWithOverridesAsync("NewDashboard"))
+                           .ReturnsAsync(feature);
+
+            _cache.Setup(c => c.GetAsync<bool?>(It.IsAny<string>()))
+                     .ReturnsAsync((bool?)null);
+
+            // Act
+            var (result, fromCache) = await _service.EvaluateAsync("NewDashboard", null, null, "IN");
+
+            // Assert
+            result.Should().BeTrue();
+            fromCache.Should().BeFalse();
+        }
+
+        [Fact]
+        public async Task EvaluateAsync_ShouldFallbackToGlobal_WhenRegionDoesNotMatch()
+        {
+            var feature = new FeatureFlag
+            {
+                Id = Guid.NewGuid(),
+                Key = "NewDashboard",
+                IsEnabled = true,
+                Overrides =
+                [
+                    new FeatureOverride
+            {
+                OverrideType = FeatureOverrideType.Region,
+                TargetId = "US",
+                IsEnabled = false
+            }
+                ]
+            };
+
+            _featureRepo.Setup(r => r.GetByKeyWithOverridesAsync("NewDashboard"))
+                           .ReturnsAsync(feature);
+
+            _cache.Setup(c => c.GetAsync<bool?>(It.IsAny<string>()))
+                     .ReturnsAsync((bool?)null);
+
+            var (result, _) = await _service.EvaluateAsync("NewDashboard", null, null, "IN");
+
+            result.Should().BeTrue(); // global value
+        }
+
+        [Fact]
+        public async Task EvaluateAsync_UserOverride_ShouldTakePriority_OverRegion()
+        {
+            var feature = new FeatureFlag
+            {
+                Id = Guid.NewGuid(),
+                Key = "NewDashboard",
+                IsEnabled = false,
+                Overrides =
+                [
+                    new FeatureOverride
+            {
+                OverrideType = FeatureOverrideType.Region,
+                TargetId = "IN",
+                IsEnabled = false
+            },
+            new FeatureOverride
+            {
+                OverrideType = FeatureOverrideType.User,
+                TargetId = "user123",
+                IsEnabled = true
+            }
+                ]
+            };
+
+            _featureRepo.Setup(r => r.GetByKeyWithOverridesAsync("NewDashboard"))
+                           .ReturnsAsync(feature);
+
+            _cache.Setup(c => c.GetAsync<bool?>(It.IsAny<string>()))
+                     .ReturnsAsync((bool?)null);
+
+            var (result, _) = await _service.EvaluateAsync("NewDashboard", "user123", null, "IN");
+
+            result.Should().BeTrue(); // user override wins
+        }
+
+        [Fact]
+        public async Task EvaluateAsync_ShouldUseRegionInCacheKey()
+        {
+            _cache.Setup(c => c.GetAsync<bool?>("feature_eval:NewDashboard:region:IN"))
+                     .ReturnsAsync(true);
+
+            var (result, fromCache) = await _service.EvaluateAsync("NewDashboard", null, null, "IN");
+
+            result.Should().BeTrue();
+            fromCache.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task EvaluateAsync_ShouldCacheResult_WithRegionKey()
+        {
+            var feature = new FeatureFlag
+            {
+                Id = Guid.NewGuid(),
+                Key = "NewDashboard",
+                IsEnabled = true,
+                Overrides = []
+            };
+
+            _featureRepo.Setup(r => r.GetByKeyWithOverridesAsync("NewDashboard"))
+                           .ReturnsAsync(feature);
+
+            _cache.Setup(c => c.GetAsync<bool?>(It.IsAny<string>()))
+                     .ReturnsAsync((bool?)null);
+
+            await _service.EvaluateAsync("NewDashboard", null, null, "IN");
+
+            _cache.Verify(c => c.SetAsync(
+                "feature_eval:NewDashboard:region:IN",
+                true,
+                It.IsAny<TimeSpan>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task EvaluateAsync_ShouldReturnUserOverride_WhenUserMatch()
+        {
+            var feature = new FeatureFlag
+            {
+                Id = Guid.NewGuid(),
+                Key = "NewDashboard",
+                IsEnabled = false,
+                Overrides =
+                [
+                    new FeatureOverride
+            {
+                OverrideType = FeatureOverrideType.User,
+                TargetId = "user123",
+                IsEnabled = true
+            }
+                ]
+            };
+
+            _featureRepo.Setup(r => r.GetByKeyWithOverridesAsync("NewDashboard"))
+                        .ReturnsAsync(feature);
+
+            _cache.Setup(c => c.GetAsync<bool?>(It.IsAny<string>()))
+                  .ReturnsAsync((bool?)null);
+
+            var (result, fromCache) = await _service.EvaluateAsync("NewDashboard", "user123", null, null);
+
+            result.Should().BeTrue();
+            fromCache.Should().BeFalse();
+        }
+
+        [Fact]
+        public async Task EvaluateAsync_ShouldFallbackToGlobal_WhenUserDoesNotMatch()
+        {
+            var feature = new FeatureFlag
+            {
+                Id = Guid.NewGuid(),
+                Key = "NewDashboard",
+                IsEnabled = true,
+                Overrides =
+                [
+                    new FeatureOverride
+            {
+                OverrideType = FeatureOverrideType.User,
+                TargetId = "otherUser",
+                IsEnabled = false
+            }
+                ]
+            };
+
+            _featureRepo.Setup(r => r.GetByKeyWithOverridesAsync("NewDashboard"))
+                        .ReturnsAsync(feature);
+
+            _cache.Setup(c => c.GetAsync<bool?>(It.IsAny<string>()))
+                  .ReturnsAsync((bool?)null);
+
+            var (result, _) = await _service.EvaluateAsync("NewDashboard", "user123", null, null);
+
+            result.Should().BeTrue(); // global fallback
+        }
+
+        [Fact]
+        public async Task EvaluateAsync_ShouldUseUserInCacheKey()
+        {
+            _cache.Setup(c => c.GetAsync<bool?>("feature_eval:NewDashboard:user:user123"))
+                  .ReturnsAsync(true);
+
+            var (result, fromCache) = await _service.EvaluateAsync("NewDashboard", "user123", null, null);
+
+            result.Should().BeTrue();
+            fromCache.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task EvaluateAsync_ShouldCacheResult_WithUserKey()
+        {
+            var feature = new FeatureFlag
+            {
+                Id = Guid.NewGuid(),
+                Key = "NewDashboard",
+                IsEnabled = true,
+                Overrides = []
+            };
+
+            _featureRepo.Setup(r => r.GetByKeyWithOverridesAsync("NewDashboard"))
+                        .ReturnsAsync(feature);
+
+            _cache.Setup(c => c.GetAsync<bool?>(It.IsAny<string>()))
+                  .ReturnsAsync((bool?)null);
+
+            await _service.EvaluateAsync("NewDashboard", "user123", null, null);
+
+            _cache.Verify(c => c.SetAsync(
+                "feature_eval:NewDashboard:user:user123",
+                true,
+                It.IsAny<TimeSpan>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task EvaluateAsync_ShouldReturnGroupOverride_WhenGroupMatch()
+        {
+            var feature = new FeatureFlag
+            {
+                Id = Guid.NewGuid(),
+                Key = "NewDashboard",
+                IsEnabled = false,
+                Overrides =
+                [
+                    new FeatureOverride
+            {
+                OverrideType = FeatureOverrideType.Group,
+                TargetId = "admin",
+                IsEnabled = true
+            }
+                ]
+            };
+
+            _featureRepo.Setup(r => r.GetByKeyWithOverridesAsync("NewDashboard"))
+                        .ReturnsAsync(feature);
+
+            _cache.Setup(c => c.GetAsync<bool?>(It.IsAny<string>()))
+                  .ReturnsAsync((bool?)null);
+
+            var (result, _) = await _service.EvaluateAsync("NewDashboard", null, "admin", null);
+
+            result.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task EvaluateAsync_ShouldFallbackToGlobal_WhenGroupDoesNotMatch()
+        {
+            var feature = new FeatureFlag
+            {
+                Id = Guid.NewGuid(),
+                Key = "NewDashboard",
+                IsEnabled = false,
+                Overrides =
+                [
+                    new FeatureOverride
+            {
+                OverrideType = FeatureOverrideType.Group,
+                TargetId = "users",
+                IsEnabled = true
+            }
+                ]
+            };
+
+            _featureRepo.Setup(r => r.GetByKeyWithOverridesAsync("NewDashboard"))
+                        .ReturnsAsync(feature);
+
+            _cache.Setup(c => c.GetAsync<bool?>(It.IsAny<string>()))
+                  .ReturnsAsync((bool?)null);
+
+            var (result, _) = await _service.EvaluateAsync("NewDashboard", null, "admin", null);
+
+            result.Should().BeFalse(); // global fallback
+        }
+
+        [Fact]
+        public async Task EvaluateAsync_ShouldUseGroupInCacheKey()
+        {
+            _cache.Setup(c => c.GetAsync<bool?>("feature_eval:NewDashboard:group:admin"))
+                  .ReturnsAsync(true);
+
+            var (result, fromCache) = await _service.EvaluateAsync("NewDashboard", null, "admin", null);
+
+            result.Should().BeTrue();
+            fromCache.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task EvaluateAsync_ShouldCacheResult_WithGroupKey()
+        {
+            var feature = new FeatureFlag
+            {
+                Id = Guid.NewGuid(),
+                Key = "NewDashboard",
+                IsEnabled = false,
+                Overrides = []
+            };
+
+            _featureRepo.Setup(r => r.GetByKeyWithOverridesAsync("NewDashboard"))
+                        .ReturnsAsync(feature);
+
+            _cache.Setup(c => c.GetAsync<bool?>(It.IsAny<string>()))
+                  .ReturnsAsync((bool?)null);
+
+            await _service.EvaluateAsync("NewDashboard", null, "admin", null);
+
+            _cache.Verify(c => c.SetAsync(
+                "feature_eval:NewDashboard:group:admin",
+                false,
+                It.IsAny<TimeSpan>()), Times.Once);
+        }
     }
 }

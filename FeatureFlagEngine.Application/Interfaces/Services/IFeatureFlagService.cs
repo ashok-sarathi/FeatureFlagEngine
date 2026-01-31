@@ -36,7 +36,7 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
         /// Item1 = evaluation result (true if enabled),
         /// Item2 = indicates whether the result was served from cache.
         /// </returns>
-        Task<(bool, bool)> EvaluateAsync(string key, string? targetId = null, string? groupId = null);
+        Task<(bool, bool)> EvaluateAsync(string key, string? targetId = null, string? groupId = null, string? region = null);
 
         /// <summary>
         /// Adds a targeting override rule to a feature flag.

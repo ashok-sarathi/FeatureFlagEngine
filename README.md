@@ -174,6 +174,27 @@ docker compose down -v
 
 ------------------------------------------------------------------------
 
+## 📬 API Testing with `.http` File
+
+This repository includes a ready-to-use **`.http` file** that acts as
+lightweight API documentation and allows you to test endpoints without
+Postman or Swagger.
+
+You can execute these requests directly from:
+
+-   **Visual Studio** (built-in HTTP file support)\
+-   **VS Code** using the **REST Client** extension
+
+The file demonstrates the complete feature flag workflow:
+
+-   Create a feature flag\
+-   Retrieve feature flags\
+-   Update global state\
+-   Add or remove overrides\
+-   Evaluate a feature flag
+
+------------------------------------------------------------------------
+
 ## 🧪 Running Tests
 
 Tests do **not** require Docker.
