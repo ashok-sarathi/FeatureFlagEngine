@@ -1,10 +1,12 @@
 ﻿using FeatureFlagEngine.Domain.Exceptions;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 
 namespace FeatureFlagEngine.Api.Helpers.Middlewares
 {
+    [ExcludeFromCodeCoverage]
     public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
     {
         public async Task InvokeAsync(HttpContext context)

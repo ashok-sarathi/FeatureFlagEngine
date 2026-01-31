@@ -3,10 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace FeatureFlagEngine.Infrastructure.Configurations
 {
+    [ExcludeFromCodeCoverage]
     public class FeatureOverrideConfiguration : IEntityTypeConfiguration<FeatureOverride>
     {
         public void Configure(EntityTypeBuilder<FeatureOverride> builder)

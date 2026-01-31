@@ -4,9 +4,11 @@ using FeatureFlagEngine.Infrastructure.Contexts;
 using FeatureFlagEngine.Infrastructure.Repositories;
 using FeatureFlagEngine.Infrastructure.Services.Cache;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics.CodeAnalysis;
 
 namespace FeatureFlagEngine.Api.Helpers.Bootstraps
 {
+    [ExcludeFromCodeCoverage]
     public static class ServiceBootstrap
     {
         public static void AddApplicationServices(this IServiceCollection services, IConfiguration configuration)

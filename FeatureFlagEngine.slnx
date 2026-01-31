@@ -5,5 +5,9 @@
     <Project Path="FeatureFlagEngine.Domain/FeatureFlagEngine.Domain.csproj" />
     <Project Path="FeatureFlagEngine.Infrastructure/FeatureFlagEngine.Infrastructure.csproj" />
   </Folder>
-  <Folder Name="/tests/" />
+  <Folder Name="/tests/">
+    <Project Path="FeatureFlagEngine.Api.Tests/FeatureFlagEngine.Api.Tests.csproj" Id="9c02b4e3-2b94-407b-83f1-d3bd1a409064" />
+    <Project Path="FeatureFlagEngine.Application.Tests/FeatureFlagEngine.Application.Tests.csproj" Id="716513f3-ff11-4935-bf21-7a0f482e7bbf" />
+    <Project Path="FeatureFlagEngine.Infrastructure.Tests/FeatureFlagEngine.Infrastructure.Tests.csproj" Id="647f2462-5fbc-40dc-b694-21a9ee7a63a3" />
+  </Folder>
 </Solution>

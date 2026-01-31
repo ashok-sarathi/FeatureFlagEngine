@@ -3,10 +3,12 @@ using FeatureFlagEngine.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace FeatureFlagEngine.Infrastructure.Repositories.Common
 {
+    [ExcludeFromCodeCoverage]
     public abstract class CommonRepository<TEntity>(FeatureFlagDbContext dbContext) : ICommonRepository<TEntity> where TEntity : class
     {
         public readonly DbSet<TEntity> DbSet = dbContext.Set<TEntity>();

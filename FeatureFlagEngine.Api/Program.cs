@@ -3,9 +3,11 @@ using FeatureFlagEngine.Api.Helpers.Bootstraps;
 using FeatureFlagEngine.Api.Helpers.Middlewares;
 using FeatureFlagEngine.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics.CodeAnalysis;
 
 namespace FeatureFlagEngine.Api
 {
+    [ExcludeFromCodeCoverage]
     public class Program
     {
         public static void Main(string[] args)

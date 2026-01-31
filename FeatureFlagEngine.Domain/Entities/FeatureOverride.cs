@@ -1,10 +1,12 @@
 ﻿using FeatureFlagEngine.Domain.Enums;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace FeatureFlagEngine.Domain.Entities
 {
+    [ExcludeFromCodeCoverage]
     public class FeatureOverride
     {
         public Guid Id { get; set; }

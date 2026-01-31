@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace FeatureFlagEngine.Domain.Entities
 {
+    [ExcludeFromCodeCoverage]
     public class FeatureFlag
     {
         public Guid Id { get; set; }

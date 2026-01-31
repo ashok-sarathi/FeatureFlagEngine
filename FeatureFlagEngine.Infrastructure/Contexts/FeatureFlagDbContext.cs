@@ -2,10 +2,12 @@
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace FeatureFlagEngine.Infrastructure.Contexts
 {
+    [ExcludeFromCodeCoverage]
     public class FeatureFlagDbContext(DbContextOptions<FeatureFlagDbContext> options) : DbContext(options)
     {
         public DbSet<FeatureFlag> FeatureFlags { get; set; }

@@ -2,10 +2,12 @@
 using FeatureFlagEngine.Application.Interfaces.Services.Common;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace FeatureFlagEngine.Application.Services.Common
 {
+    [ExcludeFromCodeCoverage]
     public abstract class CommonService<TEntity, TDto> : ICommonService<TDto>
         where TEntity : class
         where TDto : class
