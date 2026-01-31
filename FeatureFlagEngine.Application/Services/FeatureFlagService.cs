@@ -12,9 +12,11 @@ using System.Text;
 
 namespace FeatureFlagEngine.Application.Interfaces.Services
 {
-    public class FeatureFlagService(IFeatureFlagRepository featureRepo, IFeatureOverrideRepository featureOverrideRepo)
+    public class FeatureFlagService(IFeatureFlagRepository featureRepo, IFeatureOverrideRepository featureOverrideRepo, IRedisCacheService cache)
         : CommonService<FeatureFlag, FeatureFlagDto>(featureRepo), IFeatureFlagService
     {
+        private const string CachePrefix = "feature_eval:";
+
         public async Task<List<FeatureFlagDto>> GetAllAsync(bool includeOverrides)
         {
             return includeOverrides
@@ -35,12 +37,19 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
         }
 
 
-        public async Task<bool> EvaluateAsync(string key, string? userId = null, string? groupId = null)
+        public async Task<(bool, bool)> EvaluateAsync(string key, string? userId = null, string? groupId = null)
         {
+            var cacheKey = BuildCacheKey(key, userId, groupId);
+
+            var cached = await cache.GetAsync<bool?>(cacheKey);
+            if (cached.HasValue)
+                return (cached.Value, true);
+
             var feature = await featureRepo.GetByKeyWithOverridesAsync(key)
                           ?? throw new NotFoundException($"Feature '{key}' not found");
 
             var overrides = feature.Overrides;
+            bool result;
 
             // 1️. User override (highest priority)
             if (!string.IsNullOrWhiteSpace(userId))
@@ -50,7 +59,11 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
                     o.TargetId == userId);
 
                 if (userOverride != null)
-                    return userOverride.IsEnabled;
+                {
+                    result = userOverride.IsEnabled;
+                    await cache.SetAsync(cacheKey, result, TimeSpan.FromMinutes(5));
+                    return (result, false);
+                }
             }
 
             // 2️. Group override
@@ -61,11 +74,18 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
                     o.TargetId == groupId);
 
                 if (groupOverride != null)
-                    return groupOverride.IsEnabled;
+                {
+                    result = groupOverride.IsEnabled;
+                    await cache.SetAsync(cacheKey, result, TimeSpan.FromMinutes(5));
+                    return (result, false);
+                }
             }
 
             // 3️. Global default
-            return feature.IsEnabled;
+            result = feature.IsEnabled;
+
+            await cache.SetAsync(cacheKey, result, TimeSpan.FromMinutes(5));
+            return (result, false);
         }
 
         public async Task AddOverrideAsync(string key, FeatureOverrideDto dto)
@@ -93,6 +113,7 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
                     IsEnabled = dto.IsEnabled
                 });
             }
+            await InvalidateFeatureCache(BuildCacheKey(key, dto.OverrideType == FeatureOverrideType.User ? dto.TargetId : null, dto.OverrideType == FeatureOverrideType.Group ? dto.TargetId : null));
         }
 
         public async Task RemoveOverrideAsync(string key, FeatureOverrideType type, string targetId)
@@ -109,6 +130,7 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
 
             feature.Overrides.Remove(existing);
             await featureRepo.UpdateAsync(feature);
+            await InvalidateFeatureCache(BuildCacheKey(key, type == FeatureOverrideType.User ? targetId : null, type == FeatureOverrideType.Group ? targetId : null));
         }
 
 
@@ -119,6 +141,7 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
 
             feature.IsEnabled = isEnabled;
             await featureRepo.UpdateAsync(feature);
+            await InvalidateFeatureCache(key);
         }
 
 
@@ -159,5 +182,24 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
             };
         }
 
+        private static string BuildCacheKey(string key, string? userId, string? groupId)
+        {
+            var result = $"{CachePrefix}{key}";
+            if (!string.IsNullOrWhiteSpace(groupId))
+            {
+                result += $":group:{groupId}";
+            }
+            if(!string.IsNullOrWhiteSpace(userId))
+            {
+                result += $":user:{userId}";
+            }
+            return result;
+        }
+
+        private async Task InvalidateFeatureCache(string key)
+        {
+            // Simple approach: remove all evaluations for this feature
+            await cache.RemoveAsync($"{CachePrefix}{key}");
+        }
     }
 }

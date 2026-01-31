@@ -11,7 +11,7 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
     public interface IFeatureFlagService : ICommonService<FeatureFlagDto>
     {
         Task<List<FeatureFlagDto>> GetAllAsync(bool includeOverrides);
-        Task<bool> EvaluateAsync(string key, string? targetId = null, string? groupId = null);
+        Task<(bool, bool)> EvaluateAsync(string key, string? targetId = null, string? groupId = null);
         Task AddOverrideAsync(string key, FeatureOverrideDto overrideDto);
         Task UpdateGlobalStateAsync(string key, bool isEnabled);
         Task RemoveOverrideAsync(string key, FeatureOverrideType type, string targetId);

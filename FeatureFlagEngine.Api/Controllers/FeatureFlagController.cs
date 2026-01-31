@@ -89,7 +89,16 @@ namespace FeatureFlagEngine.Api.Controllers
             [FromQuery] string? userId,
             [FromQuery] string? groupId)
         {
-            var result = await _service.EvaluateAsync(key, userId, groupId);
+            var (result, fromCache) = await _service.EvaluateAsync(key, userId, groupId);
+
+            if (fromCache)
+            {
+                Response.Headers.Append("X-Cache", "HIT");
+            }
+            else
+            {
+                Response.Headers.Append("X-Cache", "MISS");
+            }
             return Ok(result);
         }
     }
