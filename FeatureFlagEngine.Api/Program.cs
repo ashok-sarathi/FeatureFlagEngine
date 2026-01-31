@@ -12,12 +12,7 @@ namespace FeatureFlagEngine.Api
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            builder.Services.AddDbContext<FeatureFlagDbContext>(options =>
-            {
-                options.UseSqlite(builder.Configuration.GetConnectionString("FeatureFlagsDb"));
-            });
-
-            builder.Services.AddApplicationServices();
+            builder.Services.AddApplicationServices(builder.Configuration);
 
             builder.Services.AddControllers();
 
@@ -28,11 +23,7 @@ namespace FeatureFlagEngine.Api
 
             app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-            using (var scope = app.Services.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<FeatureFlagDbContext>();
-                db.Database.Migrate();
-            }
+            app.UseMigration();
 
             app.UseSwagger();
             app.UseSwaggerUI();

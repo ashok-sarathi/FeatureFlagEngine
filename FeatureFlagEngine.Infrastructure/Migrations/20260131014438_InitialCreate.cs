@@ -15,10 +15,10 @@ namespace FeatureFlagEngine.Infrastructure.Migrations
                 name: "FeatureFlags",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Key = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    IsEnabled = table.Column<bool>(type: "INTEGER", nullable: false),
-                    Description = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Key = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    IsEnabled = table.Column<bool>(type: "boolean", nullable: false),
+                    Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -29,11 +29,11 @@ namespace FeatureFlagEngine.Infrastructure.Migrations
                 name: "FeatureOverrides",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    FeatureFlagId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    OverrideType = table.Column<int>(type: "INTEGER", nullable: false),
-                    TargetId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    IsEnabled = table.Column<bool>(type: "INTEGER", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    FeatureFlagId = table.Column<Guid>(type: "uuid", nullable: false),
+                    OverrideType = table.Column<int>(type: "integer", nullable: false),
+                    TargetId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    IsEnabled = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
