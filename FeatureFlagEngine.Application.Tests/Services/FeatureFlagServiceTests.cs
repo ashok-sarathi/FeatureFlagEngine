@@ -29,7 +29,7 @@ namespace FeatureFlagEngine.Application.Tests.Services
         [Fact]
         public async Task CreateAsync_ShouldThrow_WhenKeyExists()
         {
-            var dto = new FeatureFlagDto { Key = "f1" };
+            var dto = new FeatureFlagDto { Key = "f1", IsEnabled = true, Description = "test", Overrides = [new() { OverrideType = FeatureOverrideType.User, TargetId = "t1", IsEnabled = false }] };
 
             _featureRepo.Setup(r => r.GetByKeyWithOverridesAsync("f1"))
                 .ReturnsAsync(new FeatureFlag());
@@ -42,7 +42,7 @@ namespace FeatureFlagEngine.Application.Tests.Services
         [Fact]
         public async Task CreateAsync_ShouldGenerateId_AndSave()
         {
-            var dto = new FeatureFlagDto { Key = "f1" };
+            var dto = new FeatureFlagDto { Key = "f1", IsEnabled = true, Description = "test", Overrides = [new() { OverrideType = FeatureOverrideType.User, TargetId = "t1", IsEnabled = false }] };
 
             _featureRepo.Setup(r => r.GetByKeyWithOverridesAsync("f1"))
                 .ReturnsAsync((FeatureFlag?)null);
@@ -59,13 +59,16 @@ namespace FeatureFlagEngine.Application.Tests.Services
         [Fact]
         public async Task GetAllAsync_WithOverrides_ShouldCallSpecialRepo()
         {
-            var entities = new List<FeatureFlag> { new() { Id = Guid.NewGuid(), Key = "f1", Overrides = [] } };
+            var entities = new List<FeatureFlag> { new() { Id = Guid.NewGuid(), Key = "f1", Overrides = [
+                    new FeatureOverride { OverrideType = FeatureOverrideType.User, TargetId = "u1", IsEnabled = true }
+                ] } };
 
             _featureRepo.Setup(r => r.GetAllWithOverridesAsync()).ReturnsAsync(entities);
 
             var result = await _service.GetAllAsync(true);
 
             result.Should().HaveCount(1);
+            result[0].Overrides.Should().HaveCount(1);
         }
 
         [Fact]

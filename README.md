@@ -187,3 +187,27 @@ Testing stack:
 -   **xUnit** -- Test framework
 -   **Moq** -- Mocking dependencies
 -   **FluentAssertions** -- Readable assertions
+
+------------------------------------------------------------------------
+
+## 🧪 Test Coverage
+
+``` bash
+dotnet sonarscanner begin /k:"<sonar-project-key>" /d:sonar.host.url="http://localhost:32768" /d:sonar.token="<sonar-token>" /d:sonar.cs.vscoveragexml.reportsPaths="coverage.xml"
+dotnet build --no-incremental
+dotnet-coverage collect dotnet test -f xml -o coverage.xml
+dotnet sonarscanner end /d:sonar.token="<sonar-token>"
+```
+
+Sample:
+``` bash
+dotnet sonarscanner begin /k:"Feature-Flag-Engine" /d:sonar.host.url="http://localhost:32768" /d:sonar.token="sqp_027c47db829a5b9a70afefcaf4c5640de7f807e0" /d:sonar.cs.vscoveragexml.reportsPaths="coverage.xml"
+dotnet build --no-incremental
+dotnet-coverage collect dotnet test -f xml -o coverage.xml
+dotnet sonarscanner end /d:sonar.token="sqp_027c47db829a5b9a70afefcaf4c5640de7f807e0"
+```
+
+### 🧪 Test Coverage Results
+
+![Sonarquobe Result 1](https://raw.githubusercontent.com/ashok-sarathi/FeatureFlagEngine/refs/heads/master/Sonar-Result-1.png)
+![Sonarquobe Result 2](https://raw.githubusercontent.com/ashok-sarathi/FeatureFlagEngine/refs/heads/master/Sonar-Result-2.png)
