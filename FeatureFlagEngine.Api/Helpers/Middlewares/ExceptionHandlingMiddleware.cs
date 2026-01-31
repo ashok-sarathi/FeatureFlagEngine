@@ -25,6 +25,7 @@ namespace FeatureFlagEngine.Api.Helpers.Middlewares
                 {
                     BadRequestException => HttpStatusCode.BadRequest,
                     NotFoundException => HttpStatusCode.NotFound,
+                    UnAuthException => HttpStatusCode.Unauthorized,
                     _ => HttpStatusCode.InternalServerError
                 };
                 

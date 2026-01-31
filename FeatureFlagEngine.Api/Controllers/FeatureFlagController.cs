@@ -20,6 +20,9 @@ namespace FeatureFlagEngine.Api.Controllers
         /// </summary>
         /// <param name="includeOverrides">Indicates whether override rules should be included in the response.</param>
         /// <returns>List of feature flags.</returns>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpGet]
         public async Task<ActionResult<List<FeatureFlagDto>>> GetAll([FromQuery] bool includeOverrides)
         {
@@ -32,6 +35,10 @@ namespace FeatureFlagEngine.Api.Controllers
         /// </summary>
         /// <param name="id">Feature flag ID.</param>
         /// <returns>The requested feature flag if found; otherwise 404.</returns>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<FeatureFlagDto>> GetById(Guid id)
         {
@@ -46,6 +53,10 @@ namespace FeatureFlagEngine.Api.Controllers
         /// </summary>
         /// <param name="dto">Feature flag data.</param>
         /// <returns>The newly created feature flag with location header.</returns>
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPost]
         public async Task<ActionResult<FeatureFlagDto>> Create(FeatureFlagDto dto)
         {
@@ -61,6 +72,11 @@ namespace FeatureFlagEngine.Api.Controllers
         /// <param name="id">Feature flag ID from route.</param>
         /// <param name="dto">Updated feature flag data.</param>
         /// <returns>No content if successful.</returns>
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, FeatureFlagDto dto)
         {
@@ -76,6 +92,10 @@ namespace FeatureFlagEngine.Api.Controllers
         /// </summary>
         /// <param name="id">Feature flag ID.</param>
         /// <returns>No content if deletion succeeds.</returns>
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -89,6 +109,10 @@ namespace FeatureFlagEngine.Api.Controllers
         /// </summary>
         /// <param name="key">Feature flag key.</param>
         /// <param name="isEnabled">New global state.</param>
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPatch("{key}/global")]
         public async Task<IActionResult> UpdateGlobalState(string key, [FromQuery] bool isEnabled)
         {
@@ -101,6 +125,10 @@ namespace FeatureFlagEngine.Api.Controllers
         /// </summary>
         /// <param name="key">Feature flag key.</param>
         /// <param name="dto">Override configuration.</param>
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPost("{key}/overrides")]
         public async Task<IActionResult> AddOverride(string key, FeatureOverrideDto dto)
         {
@@ -114,6 +142,10 @@ namespace FeatureFlagEngine.Api.Controllers
         /// <param name="key">Feature flag key.</param>
         /// <param name="type">Override type (User, Group, etc.).</param>
         /// <param name="targetId">Identifier of the override target.</param>
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpDelete("{key}/overrides")]
         public async Task<IActionResult> RemoveOverride(
             string key,
@@ -132,6 +164,10 @@ namespace FeatureFlagEngine.Api.Controllers
         /// <param name="userId">Optional user identifier.</param>
         /// <param name="groupId">Optional group identifier.</param>
         /// <returns>Boolean result indicating if the feature is enabled.</returns>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpGet("{key}/evaluate")]
         public async Task<ActionResult<bool>> Evaluate(string key, [FromQuery] string? userId, [FromQuery] string? groupId)
         {
