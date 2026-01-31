@@ -168,17 +168,17 @@ namespace FeatureFlagEngine.Application.Interfaces.Services
         {
             return new FeatureFlag
             {
-                Id = dto.Id == Guid.Empty ? Guid.NewGuid() : dto.Id,
+                Id = !dto.Id.HasValue || dto.Id == Guid.Empty ? Guid.NewGuid() : dto.Id.Value,
                 Key = dto.Key,
                 IsEnabled = dto.IsEnabled,
                 Description = dto.Description,
-                Overrides = dto.Overrides.Select(o => new FeatureOverride
+                Overrides = dto.Overrides?.Select(o => new FeatureOverride
                 {
-                    Id = o.Id == Guid.Empty ? Guid.NewGuid() : o.Id,
+                    Id = !o.Id.HasValue || o.Id == Guid.Empty ? Guid.NewGuid() : o.Id.Value,
                     OverrideType = o.OverrideType,
                     TargetId = o.TargetId,
                     IsEnabled = o.IsEnabled
-                }).ToList()
+                }).ToList() ?? []
             };
         }
 

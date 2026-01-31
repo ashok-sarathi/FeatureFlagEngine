@@ -1,7 +1,7 @@
 # 🚩 FeatureFlagEngine
 
 A modular **Feature Flag Engine** built with **.NET 10** following
-**Clean Architecture** principles.\
+**Clean Architecture** principles.
 It enables applications to turn features **ON or OFF at runtime**
 without redeploying code. This service depends on **PostgreSQL** and **Redis** and is designed to
 run using **Docker Compose**.
@@ -15,10 +15,10 @@ application functionality.
 
 ### Common Use Cases
 
--   Gradual feature rollouts\
--   Safe production deployments\
--   Environment-based feature control\
--   Hiding incomplete features\
+-   Gradual feature rollouts
+-   Safe production deployments
+-   Environment-based feature control
+-   Hiding incomplete features
 -   Emergency kill switches
 
 ------------------------------------------------------------------------
@@ -116,7 +116,7 @@ The system is intentionally simple and avoids unnecessary complexity.
 
 This application **cannot run standalone** because it requires:
 
--   🐘 PostgreSQL\
+-   🐘 PostgreSQL
 -   ⚡ Redis
 
 👉 The recommended and supported way to run the system is **Docker
@@ -124,7 +124,7 @@ Compose**
 
 You only need:
 
--   Docker\
+-   Docker
 -   Docker Compose
 
 ------------------------------------------------------------------------
@@ -184,6 +184,6 @@ dotnet test
 
 Testing stack:
 
--   **xUnit** -- Test framework\
--   **Moq** -- Mocking dependencies\
+-   **xUnit** -- Test framework
+-   **Moq** -- Mocking dependencies
 -   **FluentAssertions** -- Readable assertions
